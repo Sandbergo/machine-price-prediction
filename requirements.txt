@@ -1,0 +1,5 @@
+# Requirements
+matplotlib==3.0.3
+numpy==1.16.3
+pandas==0.24.2
+xgboost==0.90
