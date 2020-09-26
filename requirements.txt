@@ -1,5 +1,8 @@
 # Requirements
-matplotlib==3.0.3
+matplotlib==3.2.0
 numpy==1.16.3
-pandas==0.24.2
-xgboost==0.90
+pandas==1.1.2
+xgboost==1.2.0
+scipy==1.5.2
+scikit-learn==0.23.2
+pandas-profiling[notebook]==2.9.0
