@@ -1,15 +1,14 @@
 """
 XGBoost regressor for construction machine price prediction
 """
+import operator
 import numpy as np
 import pandas as pd
-import operator
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_absolute_error, mean_squared_error
 import xgboost as xgb
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 from pandas_profiling import ProfileReport
 
 
@@ -20,24 +19,31 @@ pd.set_option('display.width', 1000)
 plt.style.use('ggplot')
 
 
-def train_linear_regressor(x_train, x_test, y_train, y_test):
+def compare_prediction_to_benchmark(y_train, y_test, y_pred):
     # Create linear regression object
-    regr = LinearRegression()
-
-    # Train the model using the training sets
-    regr.fit(x_train, y_train)
-
-    # Make predictions using the testing set
-    y_pred = regr.predict(x_test)
-
-    # The mean squared error
-    print(f'Mean squared error: {mean_squared_error(y_test, y_pred)}')
-    print(f'Mean absolute error: {mean_absolute_error(y_test, y_pred)}')
+    test_eval = {}
+    test_eval['pred'] = y_pred
+    test_eval['benchmark'] = y_train.mean()
+    test_eval['target'] = y_test.reset_index(drop=True)
+    test_eval['diff'] = test_eval['pred'] - test_eval['target']
+    test_eval['bench diff'] = test_eval['benchmark'] - test_eval['target']
+    test_eval['abs diff'] = abs(test_eval['diff'])
+    test_eval['abs bench diff'] = abs(test_eval['bench diff'])
+    test_eval['diff %'] = (test_eval['pred'] / test_eval['target'] - 1) * 100
+    test_eval['bench diff %'] = abs((test_eval['benchmark'] / test_eval['target'] - 1) * 100)
+  
+    mean = int(test_eval['abs diff'].mean())
+    bench_mean = int(test_eval['abs bench diff'].mean())
+    mean_perc = round(abs(test_eval['diff %']).mean(), 2)
+    bench_mean_perc = round(abs(test_eval['bench diff %']).mean(), 2)
+    print('Model evaluation campared to mean benchmark:', int(y_train.mean()))
+    print(f'\n| mean abs.  difference | our model: {mean}     benchmark: {bench_mean}')
+    print(f'| mean abs % difference | our model: {mean_perc} %  benchmark: {bench_mean_perc} %\n')
 
     ax = sns.residplot(x=y_test, y=y_pred)
-    ax.set(xlabel='residual', ylabel='salgspris', title='Residualplot')
+    ax.set(xlabel='sale price', ylabel='residual', title='Residualplot')
 
-    plt.savefig("figures/linear_residuals.png")
+    plt.savefig("figures/residuals.png")
 
 
 def load_data():
@@ -53,9 +59,10 @@ def analyze_data(data_df, profile=False):
     if profile:
         print(data_df.describe())
         profile = ProfileReport(
-            data_df, title='Pandas Profiling Report', explorative=True
+            data_df, title='Pandas Profiling Report', explorative=True,
+            html={'style': {'full_width': True, 'theme': 'flatly'}}, 
             )
-        profile.to_file("figures/report.html")
+        profile.to_file("figures/report_dark.html")
     data_df.dtypes.value_counts()
 
 
@@ -111,7 +118,7 @@ def train_xgb_regressor(x_train, y_train):
         min_child_weight=1, missing=None, n_estimators=1000, n_jobs=-1,
         nthread=None, objective='reg:squarederror', random_state=101,
         reg_alpha=2, reg_lambda=0.2, scale_pos_weight=1,
-        seed=101, silent=False, subsample=1
+        seed=101, subsample=1
         )
 
     xgb_model.fit(
@@ -126,9 +133,10 @@ def train_xgb_regressor(x_train, y_train):
     x_axis = range(0, epochs)
 
     # plot log loss
-    fig, ax = plt.subplots(figsize=(8, 12))
+    fig, ax = plt.subplots(figsize=(12, 8))
     ax.plot(x_axis, results['validation_0']['mae'], label='Train')
     ax.plot(x_axis, results['validation_1']['mae'], label='Test')
+    ax.set_ylim(0, 10_000)
     ax.legend()
     plt.ylabel('Mean Average Error')
     plt.title('Mean Average Error for XGB')
@@ -138,8 +146,8 @@ def train_xgb_regressor(x_train, y_train):
     return xgb_model
 
 
-def feature_importances(xgb_model, train_X):
-    """ prints the importances of features 
+def feature_importances(xgb_model, x_train):
+    """ prints the importances of features
     Args:
         xgb_model:     XGB-model
         train_X:       training set
@@ -147,7 +155,7 @@ def feature_importances(xgb_model, train_X):
     """
     print('Feature importances in descending order:')
 
-    input_features = train_X.columns.values
+    input_features = x_train.columns.values
     feat_imp = xgb_model.feature_importances_
     np.split(feat_imp, len(input_features))
     feat_imp_dict = {}
@@ -163,15 +171,24 @@ def feature_importances(xgb_model, train_X):
 
 if __name__ == "__main__":
     raw_df = load_data()
-    analyze_data(raw_df)
+
+    analyze_data(raw_df, profile=False)
+
     transformed_df = transform_data(raw_df)
     x_train, x_test, y_train, y_test = train_test_split(
         transformed_df.drop('SalePrice', axis=1),
         transformed_df.SalePrice,
-        test_size=0.2,
+        test_size=0.1,
         random_state=101
         )
-    train_linear_regressor(x_train, x_test, y_train, y_test)
 
-    train_xgb_regressor(transformed_df.drop('SalePrice', axis=1),
-        transformed_df.SalePrice)
+    xgb_model = train_xgb_regressor(
+        x_train,
+        y_train
+        )
+
+    feature_importances(xgb_model, x_train)
+
+    y_pred = xgb_model.predict(x_test)
+
+    compare_prediction_to_benchmark(y_train, y_test, y_pred)
