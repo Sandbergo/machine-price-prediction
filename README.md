@@ -1,4 +1,4 @@
-<h1 align="center">Predicting Molecular Properties</h1>
+<h1 align="center">Machine Price Prediction</h1>
 
 <div align="center">
 
@@ -10,11 +10,12 @@
 ---
 
 <p align="center">
-Prediction of the scalar coupling constant of atom pairs in organic molecules from tabular data using ensembling of gradient boosting trees (XGB) and deep neural networks (DNN) methods in a separate model based meta-architecture. The project used data from the Kaggle competition champs-scalar-coupling.
+Predicting the price of construction machines using XGBregressor.
 </p>
 <br> 
 
 ## 🧐 About <a name = "about"></a>
+Task, as given:
 1. Lag en enkel statistikk for noen utvalgte variabler, både visuelt og numerisk. (Snitt, Max, Min).
 2. Gjør en vurdering av mengden manglende verdier, konsekvens av dette, og nevn noen metoder for
 å håndtere det.
@@ -39,6 +40,8 @@ sudo apt-get install python3-pip
 git clone https://github.com/Sandbergo/machine-price-prediction.git
 cd machine-price-prediction
 . ./install.sh
+cd machine-price-predicition
+python3 predict.py
 ```
 
 ## ⛏️ Built Using <a name = "built_using"></a>
