@@ -56,5 +56,7 @@ python3 predict.py
 
 ## 🎉 Acknowledgements
 https://www.ai4love.xyz/2020/05/10/end-to-end-bulldozer-price-regression.html
+
 https://forums.fast.ai/t/class-notes-section-2-wk2lec2/6818
+
 https://www.kaggle.com/ailobe/fastai-ml1-lesson1-rf
