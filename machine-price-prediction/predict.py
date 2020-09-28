@@ -8,6 +8,7 @@ import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from pandas_profiling import ProfileReport
 
+pd.set_option('display.max_rows', 500)
 plt.style.use('ggplot')
 
 
@@ -107,7 +108,7 @@ def train_xgb_regressor(x_train: pd.DataFrame, y_train: pd.DataFrame):
         early_stopping_rounds=8,
         verbose=True
         )
-
+    # xgb_model.load_model('models/xgb.hdf5')
     results = xgb_model.evals_result()
     x_axis = range(0, len(results['validation_0']['mae']))
 
@@ -188,6 +189,9 @@ def main():
     # analyze_data(raw_df, profile_title='Raw Data Profile')
 
     transformed_df = transform_data(raw_df)
+    correlations = transformed_df.apply(lambda x: x.corr(transformed_df['SalePrice']))
+    print(f'correlations: \n{correlations}')
+    # analyze_data(transformed_df, profile_title='Transformed Data Profile')
 
     x_train, x_test, y_train, y_test = train_test_split(
         transformed_df.drop('SalePrice', axis=1),
@@ -195,7 +199,6 @@ def main():
         test_size=0.1,
         random_state=101
         )
-    # analyze_data(raw_df, profile_title='Transformed Data Profile')
     print('Training model...')
     xgb_model = train_xgb_regressor(
         x_train=x_train,
