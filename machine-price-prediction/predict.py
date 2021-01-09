@@ -95,12 +95,11 @@ def train_xgb_regressor(x_train: pd.DataFrame, y_train: pd.DataFrame):
         base_score=0.5, booster='gbtree', colsample_bylevel=1,
         colsample_bytree=1, gamma=0, importance_type='gain',
         learning_rate=0.2, max_delta_step=0, max_depth=13,
-        min_child_weight=10, missing=None, n_estimators=300, n_jobs=-1,
+        min_child_weight=10, missing=None, n_estimators=5, n_jobs=-1,
         nthread=None, objective='reg:squarederror', random_state=101,
         reg_alpha=2, reg_lambda=0.2, scale_pos_weight=1,
         seed=101, subsample=1
         )
-
     xgb_model.fit(
         x_train, y_train,
         eval_set=[(x_train, y_train), (x_val, y_val)],
@@ -185,10 +184,16 @@ def plot_features(columns: list, importances: list, n=20) -> None:
 
 def main():
     print('Loading data...')
-    raw_df = load_data('data/TrainAndValid.csv')
+    raw_df_trainval = load_data('data/TrainAndValid.csv')
+    raw_df_test = load_data('data/Test.csv')
+    raw_df = raw_df_trainval.append(raw_df_test)
     # analyze_data(raw_df, profile_title='Raw Data Profile')
 
     transformed_df = transform_data(raw_df)
+    
+    transformed_df = transformed_df.dropna(subset=['SalePrice'])
+    print(transformed_df.shape)
+   
     correlations = transformed_df.apply(lambda x: x.corr(transformed_df['SalePrice']))
     print(f'correlations: \n{correlations}')
     # analyze_data(transformed_df, profile_title='Transformed Data Profile')
@@ -211,6 +216,26 @@ def main():
 
     compare_prediction_to_benchmark(y_train=y_train, y_test=y_test, y_pred=y_pred)
     print('Finished sucessfully')
+
+
+def predict_price(ID: str):
+    xgb_model = xgb.XGBRegressor() 
+    xgb_model.load_model('models/xgb.hdf5')
+
+    raw_df_trainval = load_data('data/TrainAndValid.csv')
+    raw_df_test = load_data('data/Test.csv')
+    
+    raw_df = raw_df_trainval.append(raw_df_test)
+    
+    # analyze_data(raw_df, profile_title='Raw Data Profile')
+
+    transformed_df = transform_data(raw_df)
+    
+    x_id = transformed_df.loc[transformed_df['SalesID'] == ID].drop('SalePrice', 1)
+   
+    predicted_price = xgb_model.predict(x_id)
+    
+    return float(predicted_price)
 
 
 if __name__ == "__main__":
