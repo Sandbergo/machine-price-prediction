@@ -5,8 +5,8 @@ from predict import predict_price
 
 app = FastAPI()
 origins = [
-    "http://localhost:8000",
-    "localhost:8000"
+    "http://localhost:3000",
+    "localhost:3000"
 ]
 
 
@@ -25,6 +25,12 @@ def index():
 
 @app.get('/{ID}')
 def return_predict_price(ID: int): -> dict
+    """Returns predicted price of ID
+    Args:
+        ID (int): SalesID
+    Returns:
+        dict: predicted price
+    """
     print(f'Evaluating ID {ID}...')
     prediction = round(predict_price(ID=ID))
     print(f'Predicted price: {prediction}')
@@ -34,4 +40,4 @@ def return_predict_price(ID: int): -> dict
 
 
 if __name__ == '__main__':
-    uvicorn.run(app, host='127.0.0.1', port=8000, reload=True)
+    uvicorn.run(app, host='127.0.0.1', port=3000, reload=True)
